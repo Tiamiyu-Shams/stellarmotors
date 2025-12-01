@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow-lg border-0">
+    <div class="card-header bg-warning text-white">
+      <h3 class="mb-0">Edit Seller Information</h3>
+    </div>
+    <div class="card-body">
+      <form action="{{ url_for('admin.edit_seller', seller_id=seller.id) }}" method="POST" enctype="multipart/form-data">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="name" class="form-label">Seller Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ seller.name }}" required>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="contact_email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ seller.contact_email }}" required>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="phone" class="form-label">Phone</label>
+            <input type="text" class="form-control" id="phone" name="phone" value="{{ seller.phone }}" required>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="address" class="form-label">Address</label>
+            <input type="text" class="form-control" id="address" name="address" value="{{ seller.address }}">
+          </div>
+
+          <div class="mb-3">
+            <label for="about" class="form-label">About Seller</label>
+            <textarea class="form-control" id="about" name="about" rows="4">{{ seller.about }}</textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="photo" class="form-label">Seller Photo</label><br>
+            {% if seller.photo %}
+              <img src="{{ url_for('static', filename='uploads/sellers/' + seller.photo) }}" 
+                   alt="Seller Photo" width="100" class="rounded mb-2">
+            {% else %}
+              <span class="text-muted">No current photo</span><br>
+            {% endif %}
+            <input type="file" class="form-control mt-2" id="photo" name="photo" accept="image/*">
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+          <br>
+          <a href="{{ url_for('admin.sellers') }}" class="px-4 py-2 bg-slate-200 rounded">&LeftArrow; Back to List</a>
+          <br>
+          <br>
+          <button type="submit" class="bg-primary-900 text-white px-4 py-2 rounded">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

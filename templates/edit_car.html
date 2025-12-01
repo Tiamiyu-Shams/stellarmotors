@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Edit Car — Stellar Motors{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+  <h2 class="text-xl font-bold mb-4">Edit Car</h2>
+  <form method="POST" enctype="multipart/form-data" class="space-y-4">
+
+  <!-- Car Title -->
+  <label class="font-semibold">Car Title</label>
+  <input name="title" value="{{ car['title'] }}" class="w-full p-2 border rounded" required>
+
+  <!-- Description -->
+  <label class="font-semibold">Description</label>
+  <textarea name="description" class="w-full p-2 border rounded" rows="3">{{ car['description'] }}</textarea>
+
+  <!-- Price (formatted in Naira) -->
+  <label class="font-semibold">Price (₦)</label>
+  <input name="price"
+         value="{{ '{:,.0f}'.format(car['price']|float) }}"
+         class="w-full p-2 border rounded"
+         placeholder="e.g., 2,450,000">
+
+  <!-- Mileage -->
+  <label class="font-semibold">Mileage (km)</label>
+  <input name="mileage" value="{{ car['mileage'] or '' }}" class="w-full p-2 border rounded" placeholder="e.g., 45,000">
+
+  <!-- Body Condition -->
+  <label class="font-semibold">Body Condition</label>
+  <input name="body_condition" value="{{ car['body_condition'] or '' }}" class="w-full p-2 border rounded" placeholder="e.g., Excellent / Good / Fair">
+
+  <!-- Fuel Efficiency -->
+  <label class="font-semibold">Fuel Efficiency (km/l)</label>
+  <input name="fuel_efficiency" value="{{ car['fuel_efficiency'] or '' }}" class="w-full p-2 border rounded" placeholder="e.g., 12 km/l">
+
+  <!-- Engine Performance -->
+  <label class="font-semibold">Engine Performance</label>
+  <input name="engine_performance" value="{{ car['engine_performance'] or '' }}" class="w-full p-2 border rounded" placeholder="e.g., Strong / Normal">
+
+  <!-- Category -->
+  <label class="font-semibold">Category</label>
+  <input name="category" value="{{ car['category'] or '' }}" class="w-full p-2 border rounded" placeholder="e.g., Toyota / Honda / SUV">
+
+  <!-- Main Car Image -->
+  <label class="font-semibold">Current Car Image:</label>
+  <img id="carEditPreview" src="{{ car['image'] }}" class="w-full h-44 object-cover rounded border mb-2">
+  <input type="hidden" name="current_image" value="{{ car['image'] }}">
+  <input type="file" name="image" accept="image/*" onchange="previewImage(event,'carEditPreview')" class="w-full">
+
+  <!-- Seller Name -->
+  <label class="font-semibold">Seller Name</label>
+  <input name="seller_name" value="{{ car['seller_name'] }}" class="w-full p-2 border rounded">
+
+  <!-- Seller Photo -->
+  <label class="font-semibold">Current Seller Photo:</label>
+  <img id="sellerEditPreview" src="{{ car['seller_photo'] }}" class="h-20 w-20 object-cover rounded-full border mb-2">
+  <input type="hidden" name="current_seller_photo" value="{{ car['seller_photo'] }}">
+  <input type="file" name="seller_photo" accept="image/*" onchange="previewImage(event,'sellerEditPreview')" class="w-full">
+
+  <!-- Buttons -->
+  <div class="flex gap-3">
+    <button class="bg-primary-900 text-white px-4 py-2 rounded">Save changes</button>
+    <a href="{{ url_for('admin.dashboard') }}" class="px-4 py-2 bg-slate-200 rounded">Cancel</a>
+  </div>
+
+</form>
+
+</div>
+{% endblock %}

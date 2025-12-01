@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Stellar Motors{% endblock %}</title>
+
+  <!-- Tailwind CDN (easy) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  
+
+
+  <style>
+    /* minor inline fallback for nav z */
+    .nav-backdrop { z-index: 50; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- NAVBAR -->
+  <header class="bg-primary-900 text-white">
+    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="{{ url_for('main.index') }}" class="flex items-center gap-3">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" class="h-10 w-10 object-cover rounded-md shadow-sm bg-white/20">
+          <div>
+            <div class="font-bold text-lg">Stallion Motors</div>
+            <div class="text-sm text-slate-200">Luxury & Performance</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- desktop nav -->
+      <nav class="hidden md:flex items-center gap-4">
+        <a class="nav-link" href="{{ url_for('main.index') }}">Home</a>
+        <!-- <a class="nav-link" href="{{ url_for('main.cars') }}">Cars</a> -->
+        
+        {% if session.get('user_id') %}
+          <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin</a>
+          <a class="nav-cta" href="{{ url_for('auth.logout') }}">Logout</a>
+        {% else %}
+          <a class="nav-cta" href="{{ url_for('auth.login') }}">Login</a>
+        {% endif %}
+      </nav>
+
+      <!-- mobile toggle -->
+      <div class="md:hidden">
+        <button id="mobileMenuBtn" class="p-2 rounded-md hover:bg-white/10">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- mobile menu -->
+    <div id="mobileMenu" class="hidden md:hidden bg-primary-800 nav-backdrop">
+      <div class="px-4 py-4 flex flex-col gap-2">
+        <a class="block text-white py-2" href="{{ url_for('main.index') }}">Home</a>
+        <a class="block text-white py-2" href="{{ url_for('main.index') }}#cars">Cars</a>
+        {% if session.get('user_id') %}
+          <a class="block text-white py-2" href="{{ url_for('admin.dashboard') }}">Admin</a>
+          <a class="block text-white py-2" href="{{ url_for('auth.logout') }}">Logout</a>
+        {% else %}
+          <a class="block text-white py-2" href="{{ url_for('auth.login') }}">Login</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- FLASH MESSAGES -> hidden container for JS to read -->
+  <div id="flash-messages" class="hidden" aria-hidden="true">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div data-category="{{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed top-6 right-6 z-50 space-y-3"></div>
+
+
+
+  <!-- PAGE CONTENT -->
+  <main class="container mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+
+<!-- Google Map Section -->
+<section class="w-full mt-6">
+    <h2 class="text-xl font-semibold mb-2 text-center">Find Us on the Map</h2>
+    <div class="w-full flex justify-center">
+        <!-- <iframe 
+            src="https://maps.app.goo.gl/RB5Gy7A6mPJDJ8qj7"
+            width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy">
+        </iframe>
+ -->
+        <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1105.3744692076166!2d7.326421199016376!3d9.144883490575024!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sng!4v1764597840867!5m2!1sen!2sng" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+</section>
+
+
+<footer class="bg-slate-900 text-slate-200 py-14 mt-12 border-t border-slate-700">
+    <div class="container mx-auto px-6 grid md:grid-cols-4 gap-10">
+
+        <!-- Company Info -->
+        <div>
+            <h3 class="text-lg font-semibold mb-3">Stellar Motors</h3>
+            <p class="text-slate-400 text-sm">
+                Premium auto dealership offering new and pre-owned cars with a seamless buying experience.
+            </p>
+
+            <div class="mt-4 space-y-3">
+                <p class="flex items-start gap-2">
+                    <i class="fa-solid fa-location-dot text-blue-400 mt-1"></i>
+                    <span>No. 15 Crescent Avenue, Abuja, Nigeria</span>
+                </p>
+
+                <p class="flex items-center gap-2">
+                    <i class="fa-solid fa-phone text-blue-400"></i>
+                    <a href="tel:+2348012345678" class="hover:text-white">+234 801 234 5678</a>
+                </p>
+
+                <p class="flex items-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-green-400"></i>
+                    <a href="https://wa.me/2348012345678" target="_blank" class="hover:text-white">
+                        Chat on WhatsApp
+                    </a>
+                </p>
+
+                <p class="flex items-center gap-2">
+                    <i class="fa-solid fa-envelope text-red-400"></i>
+                    <a href="mailto:info@stellarmotors.com" class="hover:text-white">
+                        info@stellarmotors.com
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div>
+            <h3 class="text-lg font-semibold mb-3">Quick Links</h3>
+            <ul class="space-y-2 text-slate-400 text-sm">
+                <li><a href="/" class="hover:text-white">Home</a></li>
+                <li><a href="/#cars" class="hover:text-white">Browse Cars</a></li>
+                <li><a href="{{ url_for('admin.dashboard') }}" class="hover:text-white">Admin Dashboard</a></li>
+                <li><a href="#" class="hover:text-white">Contact Us</a></li>
+            </ul>
+        </div>
+
+        <!-- Social Media -->
+        <div>
+            <h3 class="text-lg font-semibold mb-3">Follow Us</h3>
+
+            <div class="flex items-center gap-4 text-xl">
+                <a href="https://facebook.com/stellarmotors" target="_blank" class="hover:text-white">
+                    <i class="fa-brands fa-facebook"></i>
+                </a>
+
+                <a href="https://instagram.com/stellarmotors" target="_blank" class="hover:text-white">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+
+                <a href="https://twitter.com/stellarmotors" target="_blank" class="hover:text-white">
+                    <i class="fa-brands fa-twitter"></i>
+                </a>
+
+                <a href="https://youtube.com/stellarmotors" target="_blank" class="hover:text-white">
+                    <i class="fa-brands fa-youtube"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Business Hours -->
+        <div>
+            <h3 class="text-lg font-semibold mb-3">Business Hours</h3>
+            <ul class="text-slate-400 text-sm space-y-1">
+                <li>Monday – Friday: 8:00 AM – 5:00 PM</li>
+                <li>Saturday: 9:00 AM – 1:00 PM</li>
+                <li>Sunday: Closed</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <!-- Bottom Footer Strip -->
+    <div class="border-t border-slate-700 mt-12 pt-4 text-center text-xs text-slate-400">
+        &copy; {{ now().year if now is defined }} Stellar Motors — All rights reserved.
+    </div>
+</footer>
+
+
+
+  <!-- GLOBAL SCRIPTS -->
+  <script>
+    // mobile menu toggle
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+      const m = document.getElementById('mobileMenu');
+      m.classList.toggle('hidden');
+    });
+
+    // Toast display logic: read hidden container, create visible toasts
+    function buildToast(msg, category='info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'max-w-sm w-full rounded shadow-lg p-3 flex items-start gap-3 animate-slide-in';
+
+      // color variations
+      const colorMap = {
+        success: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+        error:   'bg-rose-50 border-rose-200 text-rose-800',
+        info:    'bg-sky-50 border-sky-200 text-sky-800',
+        warning: 'bg-amber-50 border-amber-200 text-amber-800'
+      };
+      const classes = colorMap[category] || colorMap.info;
+      toast.classList.add('border', ...classes.split(' '));
+
+      // icon
+      const icon = document.createElement('div');
+      icon.innerHTML = {
+        success: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>',
+        error: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>',
+        info: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m0-4h.01M12 20a8 8 0 1 0-0-16 8 8 0 0 0 0 16z"/></svg>'
+      }[category] || '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m0-4h.01M12 20a8 8 0 1 0-0-16 8 8 0 0 0 0 16z"/></svg>';
+      icon.className = 'shrink-0';
+      toast.appendChild(icon);
+
+      // text
+      const text = document.createElement('div');
+      text.className = 'text-sm leading-tight';
+      text.innerHTML = msg;
+      toast.appendChild(text);
+
+      // close button
+      const close = document.createElement('button');
+      close.className = 'ml-auto text-sm';
+      close.innerHTML = '✕';
+      close.onclick = () => { toast.remove(); };
+      toast.appendChild(close);
+
+      container.appendChild(toast);
+
+      // auto dismiss
+      setTimeout(()=> {
+        toast.remove();
+      }, 4500);
+    }
+
+    // On DOM ready: read hidden flash messages and show toasts
+    document.addEventListener('DOMContentLoaded', () => {
+      const flashRoot = document.getElementById('flash-messages');
+      if (!flashRoot) return;
+      const children = flashRoot.querySelectorAll('div');
+      children.forEach(node => {
+        const cat = node.dataset.category || 'info';
+        buildToast(node.textContent, cat);
+      });
+    });
+
+    // image preview helper (used on admin pages)
+    function previewImage(event, previewId) {
+      const input = event.target;
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.getElementById(previewId);
+        if(img) img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
+
+  {% block scripts %}{% endblock %}
+  <!-- Floating Call Button -->
+<a href="tel:+2348012345678" 
+   class="fixed bottom-24 right-4 bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg font-semibold hover:bg-blue-700 transition">
+    Call Us Now
+</a>
+
+<!-- WhatsApp Floating Button -->
+<a href="https://wa.me/2348012345678" target="_blank"
+   class="fixed bottom-4 right-4 bg-green-500 w-14 h-14 flex items-center justify-center rounded-full shadow-lg hover:bg-green-600 transition">
+    <i class="bi bi-whatsapp text-white text-3xl"></i>
+</a>
+
+</body>
+</html>
