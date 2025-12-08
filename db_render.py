@@ -8,8 +8,7 @@ DB_URL = os.getenv("DATABASE_URL")
 
 # ----------- CONNECTION (POSTGRES) ------------
 def get_db_connection():
-    conn = psycopg2.connect(DB_URL, sslmode="require")
-    return conn
+    return psycopg2.connect(DB_URL, sslmode="require")
 
 
 # ----------- GENERIC QUERY HELPERS -------------
@@ -27,10 +26,16 @@ def modify(sql, args=()):
     cur = conn.cursor()
     cur.execute(sql, args)
     conn.commit()
+
+    # SAFE ID CAPTURE
+    last_id = None
     try:
-        last_id = cur.fetchone()[0]
+        row = cur.fetchone()
+        if row:
+            last_id = row[0]
     except:
-        last_id = None
+        pass
+
     conn.close()
     return last_id
 
@@ -40,6 +45,7 @@ def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # USERS
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -48,6 +54,7 @@ def init_db():
         );
     """)
 
+    # SELLERS
     cur.execute("""
         CREATE TABLE IF NOT EXISTS sellers (
             id SERIAL PRIMARY KEY,
@@ -60,6 +67,7 @@ def init_db():
         );
     """)
 
+    # CARS
     cur.execute("""
         CREATE TABLE IF NOT EXISTS cars (
             id SERIAL PRIMARY KEY,
@@ -74,15 +82,16 @@ def init_db():
             body_condition TEXT,
             fuel_efficiency TEXT,
             engine_performance TEXT,
-            seller_id INTEGER REFERENCES sellers(id),
+            seller_id INTEGER REFERENCES sellers(id) ON DELETE CASCADE,
             date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
 
+    # CAR IMAGES — IMPORTANT FIX: CASCADE DELETE
     cur.execute("""
         CREATE TABLE IF NOT EXISTS car_images (
             id SERIAL PRIMARY KEY,
-            car_id INTEGER REFERENCES cars(id),
+            car_id INTEGER REFERENCES cars(id) ON DELETE CASCADE,
             image_path TEXT
         );
     """)
