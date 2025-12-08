@@ -1,37 +1,73 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
 import os
+from flask import Flask
+from flask_mail import Mail
 
-# choose correct DB engine
-if os.environ.get("RENDER"):
-    from db_render import get_db
+from config import SECRET_KEY, UPLOAD_FOLDER
+
+# -------------------------------
+# AUTO-SELECT DATABASE BACKEND
+# -------------------------------
+if os.getenv("RENDER") or os.getenv("DATABASE_URL"):
+    from db_render import init_db, seed_data, get_db_connection
+    print("🔗 Connected to: Render PostgreSQL (db_render.py)")
 else:
-    from db_local import get_db
+    from db_local import init_db, seed_data, get_db_connection
+    print("🗄 Using Local SQLite (db_local.py)")
 
-app = Flask(__name__)  # <<< THIS MUST EXIST
-app.secret_key = "replace-this"
+# -------------------------------
+# BLUEPRINTS
+# -------------------------------
+from routes.auth import auth_bp
+from routes.main import main_bp
+from routes.admin import admin_bp
 
-# --- HOME PAGE ---
-@app.route("/")
-def home():
-    db = get_db()
-    cars = db.execute("SELECT * FROM cars").fetchall()
-    return render_template("index.html", cars=cars)
-
-# --- ADD CAR ---
-@app.route("/add", methods=["GET", "POST"])
-def add_car():
-    if request.method == "POST":
-        name = request.form["name"]
-        price = request.form["price"]
-
-        db = get_db()
-        db.execute("INSERT INTO cars (name, price) VALUES (?, ?)", (name, price))
-        db.commit()
-        flash("Car added successfully")
-        return redirect(url_for("home"))
-
-    return render_template("add.html")
+mail = Mail()
 
 
+def create_app():
+    app = Flask(__name__)
+    app.secret_key = SECRET_KEY
+
+    # -------------------------------
+    # UPLOADS CONFIG
+    # -------------------------------
+    app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+    # -------------------------------
+    # MAIL CONFIG
+    # -------------------------------
+    app.config["MAIL_SERVER"] = "smtp.gmail.com"
+    app.config["MAIL_PORT"] = 587
+    app.config["MAIL_USE_TLS"] = True
+    app.config["MAIL_USERNAME"] = "your_email@gmail.com"
+    app.config["MAIL_PASSWORD"] = "your_app_password"
+
+    mail.init_app(app)
+
+    # -------------------------------
+    # REGISTER BLUEPRINTS
+    # -------------------------------
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(main_bp)
+    app.register_blueprint(admin_bp)
+
+    # -------------------------------
+    # DATABASE INIT (safe to run twice)
+    # -------------------------------
+    print("📦 Initializing Database...")
+    init_db()
+    seed_data()
+
+    return app
+
+
+# ---------------------------------------
+# EXPOSE A GLOBAL `app` FOR GUNICORN
+# ---------------------------------------
+app = create_app()
+
+
+# Run app locally
 if __name__ == "__main__":
     app.run(debug=True)
