@@ -3,10 +3,12 @@ from werkzeug.security import generate_password_hash
 import os
 from config import DB_NAME
 
+
 # ----------- CONNECTION (LOCAL SQLITE) ------------
 def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")   # IMPORTANT
     return conn
 
 
@@ -14,8 +16,7 @@ def get_db_connection():
 def query(sql, args=()):
     with get_db_connection() as conn:
         cur = conn.execute(sql, args)
-        rows = cur.fetchall()
-        return rows
+        return cur.fetchall()
 
 
 def modify(sql, args=()):
@@ -36,7 +37,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL
-            )
+            );
         """)
 
         # SELLERS TABLE
@@ -49,10 +50,10 @@ def init_db():
                 address TEXT,
                 about TEXT,
                 photo TEXT
-            )
+            );
         """)
 
-        # CARS TABLE
+        # CARS TABLE (MATCHED WITH POSTGRES)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS cars (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,22 +70,22 @@ def init_db():
                 engine_performance TEXT,
                 seller_id INTEGER,
                 date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (seller_id) REFERENCES sellers(id)
-            )
+                FOREIGN KEY (seller_id) REFERENCES sellers(id) ON DELETE CASCADE
+            );
         """)
 
-        # CAR IMAGES TABLE
+        # CAR IMAGES (MATCHED WITH POSTGRES)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS car_images (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 car_id INTEGER,
                 image_path TEXT,
-                FOREIGN KEY (car_id) REFERENCES cars(id)
-            )
+                FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE
+            );
         """)
 
         conn.commit()
-        print("✅ SQLite local DB initialized")
+        print("✅ SQLite local DB initialized (with cascading deletes!)")
 
 
 # ----------- SEED SAMPLE DATA -------------------
@@ -96,8 +97,10 @@ def seed_data():
         cur.execute("SELECT COUNT(*) FROM users")
         if cur.fetchone()[0] == 0:
             pw = generate_password_hash("password123")
-            cur.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                        ("admin", pw))
+            cur.execute(
+                "INSERT INTO users (username, password) VALUES (?, ?)",
+                ("admin", pw)
+            )
             print("➡️ Default admin user created")
 
         # SELLERS
@@ -111,6 +114,7 @@ def seed_data():
                 ("Carol White", "carol@example.com", "09098765432", "Port Harcourt",
                  "SUV specialist.", None),
             ]
+
             cur.executemany("""
                 INSERT INTO sellers (name, contact_email, phone, address, about, photo)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -124,7 +128,7 @@ def seed_data():
             cars = [
                 ("2023 Executive Sedan", "Luxury sedan.", 45000,
                  "/static/images/sedan.jpg", "Alice Johnson", None, "Sedan",
-                 "10,000 km", "Excellent", "15 km/L", "V6 Turbo", 1),
+                 "10,000 km", "Excellent", "15 km/L", "V6 Turbo Engine", 1),
 
                 ("2022 Sport Coupe", "Sport coupe.", 38500,
                  "/static/images/coupe.jpg", "Bob Smith", None, "Coupe",
