@@ -1,7 +1,8 @@
-import sqlite3
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from db import get_db_connection
+from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
+
+from db import get_db_connection
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -20,19 +21,26 @@ def login():
             return render_template("login.html")
 
         conn = get_db_connection()
-        # Use parameterized query to prevent SQL injection
-        user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        cursor.execute(
+            "SELECT * FROM users WHERE username = %s",
+            (username,)
+        )
+        user = cursor.fetchone()
+
+        cursor.close()
         conn.close()
 
         if user and check_password_hash(user["password"], password):
-            # Store only necessary session info
             session.clear()
             session["user_id"] = user["id"]
             session["username"] = user["username"]
+
             flash(f"Welcome back, {user['username']}!", "success")
             return redirect(url_for("admin.dashboard"))
 
-        flash("Invalid username or password", "error")
+        flash("Invalid username or password.", "error")
 
     return render_template("login.html")
 
@@ -57,7 +65,6 @@ def register():
         password = request.form.get("password", "")
         confirm = request.form.get("confirm_password", "")
 
-        # Basic validation
         if not username or not password or not confirm:
             flash("All fields are required.", "error")
             return render_template("register.html")
@@ -70,18 +77,21 @@ def register():
 
         try:
             conn = get_db_connection()
-            conn.execute(
-                "INSERT INTO users (username, password) VALUES (?, ?)",
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "INSERT INTO users (username, password) VALUES (%s, %s)",
                 (username, pw_hash)
             )
+
             conn.commit()
+            cursor.close()
             conn.close()
+
             flash("Account created successfully! Please log in.", "success")
             return redirect(url_for("auth.login"))
 
-        except sqlite3.IntegrityError:
-            flash("Username already exists. Please choose another.", "error")
-        except Exception as e:
-            flash(f"An error occurred: {str(e)}", "error")
+        except Exception:
+            flash("Username already exists or database error occurred.", "error")
 
     return render_template("register.html")
