@@ -10,6 +10,7 @@ from flask import (
     current_app
 )
 from werkzeug.utils import secure_filename
+from psycopg2.extras import RealDictCursor
 from db import get_db_connection
 
 # --------------------------------------------------
@@ -41,7 +42,8 @@ def index():
     query += " ORDER BY id DESC"
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(query, params)
     cars = cursor.fetchall()
     cursor.close()
@@ -298,4 +300,5 @@ def send_message():
         print("Email error:", e)
 
     return redirect(whatsapp_url)
+
 
