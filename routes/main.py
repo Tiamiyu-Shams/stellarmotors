@@ -24,60 +24,30 @@ main_bp = Blueprint("main", __name__)
 # --------------------------------------------------
 @main_bp.route("/")
 def index():
-    conn = get_db_connection()
-
     search = request.args.get("search", "").strip()
-    category = request.args.get("category", "").strip()
-    min_price = request.args.get("min_price", "").strip()
-    max_price = request.args.get("max_price", "").strip()
-    sort = request.args.get("sort", "newest")
+    category = request.args.get("category")
 
     query = "SELECT * FROM cars WHERE 1=1"
     params = []
 
     if search:
-        query += " AND (title LIKE ? OR description LIKE ?)"
-        like = f"%{search}%"
-        params.extend([like, like])
+        query += " AND (title ILIKE %s OR description ILIKE %s)"
+        params.extend([f"%{search}%", f"%{search}%"])
 
     if category:
-        query += " AND category = ?"
+        query += " AND category = %s"
         params.append(category)
 
-    if min_price:
-        query += " AND price >= ?"
-        params.append(float(min_price))
+    query += " ORDER BY id DESC"
 
-    if max_price:
-        query += " AND price <= ?"
-        params.append(float(max_price))
-
-    if sort == "price_asc":
-        query += " ORDER BY price ASC"
-    elif sort == "price_desc":
-        query += " ORDER BY price DESC"
-    elif sort == "oldest":
-        query += " ORDER BY id ASC"
-    else:
-        query += " ORDER BY id DESC"
-
-    cars = conn.execute(query, params).fetchall()
-    categories = conn.execute(
-        "SELECT DISTINCT category FROM cars WHERE category IS NOT NULL"
-    ).fetchall()
-
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    cars = cursor.fetchall()
+    cursor.close()
     conn.close()
 
-    return render_template(
-        "index.html",
-        cars=cars,
-        categories=categories,
-        search=search,
-        category=category,
-        min_price=min_price,
-        max_price=max_price,
-        sort=sort,
-    )
+    return render_template("index.html", cars=cars)
 
 # --------------------------------------------------
 # LIST CARS – SEARCH + SORT + PAGINATION
@@ -328,3 +298,4 @@ def send_message():
         print("Email error:", e)
 
     return redirect(whatsapp_url)
+
