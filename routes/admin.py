@@ -1,12 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
-from werkzeug.utils import secure_filename
-import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from psycopg2.extras import RealDictCursor
 
 from db import get_db_connection
 from utils import handle_upload
 
 # --------------------------------
-# BLUEPRINT DEFINITION (MUST BE FIRST)
+# BLUEPRINT DEFINITION
 # --------------------------------
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -21,10 +20,20 @@ def dashboard():
         return redirect(url_for("auth.login"))
 
     conn = get_db_connection()
-    cars = conn.execute("SELECT * FROM cars ORDER BY id DESC").fetchall()
+
+    # PostgreSQL-safe cursor
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT * FROM cars ORDER BY id DESC")
+    cars = cursor.fetchall()
+
+    cursor.close()
     conn.close()
 
-    return render_template("admin.html", cars=cars, username=session.get("username"))
+    return render_template(
+        "admin.html",
+        cars=cars,
+        username=session.get("username")
+    )
 
 
 # --------------------------------
@@ -38,7 +47,12 @@ def add_car():
 
     title = request.form.get("title", "").strip()
     description = request.form.get("description", "").strip()
-    price = float(request.form.get("price", "0").replace(",", "") or 0)
+
+    try:
+        price = float(request.form.get("price", "0").replace(",", ""))
+    except ValueError:
+        price = 0.0
+
     category = request.form.get("category") or None
     seller_name = request.form.get("seller_name", "").strip()
 
@@ -53,14 +67,34 @@ def add_car():
     )
 
     conn = get_db_connection()
-    conn.execute(
+    cursor = conn.cursor()
+
+    cursor.execute(
         """
-        INSERT INTO cars (title, description, price, image, seller_name, seller_photo, category)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO cars (
+            title,
+            description,
+            price,
+            image,
+            seller_name,
+            seller_photo,
+            category
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
-        (title, description, price, image_url, seller_name, seller_photo, category)
+        (
+            title,
+            description,
+            price,
+            image_url,
+            seller_name,
+            seller_photo,
+            category
+        )
     )
+
     conn.commit()
+    cursor.close()
     conn.close()
 
     flash("Car added successfully.", "success")
