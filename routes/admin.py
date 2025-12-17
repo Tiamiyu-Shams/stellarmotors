@@ -3,6 +3,7 @@ from flask import (
     url_for, flash, session
 )
 from werkzeug.utils import secure_filename
+from psycopg2.extras import RealDictCursor
 import os
 
 from db import get_db_connection
@@ -22,9 +23,10 @@ def dashboard():
         return redirect(url_for("auth.login"))
 
     conn = get_db_connection()
-    cars = conn.execute(
-        "SELECT * FROM cars ORDER BY id DESC"
-    ).fetchall()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM cars ORDER BY id DESC")
+    cars = cur.fetchall()
+    cur.close()
     conn.close()
 
     return render_template(
@@ -64,21 +66,23 @@ def add_seller():
     address = form.get("address")
     about = form.get("about")
 
-    # upload seller photo
     photo = handle_upload(
         files.get("photo"),
         "/static/images/default_seller.jpg"
     )
 
     conn = get_db_connection()
-    conn.execute(
+    cur = conn.cursor()
+    cur.execute(
         """
-        INSERT INTO sellers (name, contact_email, phone, address, about, photo)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO sellers
+            (name, contact_email, phone, address, about, photo)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """,
         (name, email, phone, address, about, photo)
     )
     conn.commit()
+    cur.close()
     conn.close()
 
     flash("Seller added successfully!", "success")
@@ -95,9 +99,10 @@ def sellers():
         return redirect(url_for("auth.login"))
 
     conn = get_db_connection()
-    sellers = conn.execute(
-        "SELECT * FROM sellers ORDER BY id DESC"
-    ).fetchall()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM sellers ORDER BY id DESC")
+    sellers = cur.fetchall()
+    cur.close()
     conn.close()
 
     return render_template("admin_sellers.html", sellers=sellers)
@@ -113,9 +118,10 @@ def add_car_page():
         return redirect(url_for("auth.login"))
 
     conn = get_db_connection()
-    sellers = conn.execute(
-        "SELECT id, name FROM sellers ORDER BY name ASC"
-    ).fetchall()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT id, name FROM sellers ORDER BY name ASC")
+    sellers = cur.fetchall()
+    cur.close()
     conn.close()
 
     return render_template("add_car.html", sellers=sellers)
@@ -143,39 +149,42 @@ def add_car():
     engine_performance = form.get("engine_performance")
     seller_id = form.get("seller_id")
 
-    # Main image
     main_image = handle_upload(
         files.get("main_image"),
         "/static/images/default_car.jpg"
     )
 
-    # Additional images
     images = handle_multi_upload(files.getlist("images"))
 
     conn = get_db_connection()
-    cur = conn.execute(
+    cur = conn.cursor()
+    cur.execute(
         """
         INSERT INTO cars (
             title, description, price, category, mileage, body_condition,
             fuel_efficiency, engine_performance, seller_id, main_image
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
             title, description, price, category, mileage, body_condition,
             fuel_efficiency, engine_performance, seller_id, main_image
         )
     )
+    conn.commit()
 
-    car_id = cur.lastrowid
+    # new row id
+    cur.execute("SELECT LASTVAL()")
+    car_id = cur.fetchone()[0]
 
     if images:
-        conn.executemany(
-            "INSERT INTO car_images (car_id, image_url) VALUES (?, ?)",
+        cur.executemany(
+            "INSERT INTO car_images (car_id, image_url) VALUES (%s, %s)",
             [(car_id, img) for img in images]
         )
 
     conn.commit()
+    cur.close()
     conn.close()
 
     flash("Car uploaded successfully!", "success")
@@ -192,9 +201,11 @@ def delete_car(car_id):
         return redirect(url_for("auth.login"))
 
     conn = get_db_connection()
-    conn.execute("DELETE FROM car_images WHERE car_id=?", (car_id,))
-    conn.execute("DELETE FROM cars WHERE id=?", (car_id,))
+    cur = conn.cursor()
+    cur.execute("DELETE FROM car_images WHERE car_id=%s", (car_id,))
+    cur.execute("DELETE FROM cars WHERE id=%s", (car_id,))
     conn.commit()
+    cur.close()
     conn.close()
 
     flash("Car deleted.", "info")
@@ -208,4 +219,3 @@ def delete_car(car_id):
 def edit_car(car_id):
     flash("Edit page coming soon.", "info")
     return redirect(url_for("admin.dashboard"))
-
