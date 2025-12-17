@@ -1,138 +1,209 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from psycopg2.extras import RealDictCursor
-from utils import handle_upload
-from db import get_db_connection
+from flask import (
+    Blueprint, render_template, request, redirect,
+    url_for, flash, session
+)
+from werkzeug.utils import secure_filename
+import os
 
-# --------------------------------
-# BLUEPRINT
-# --------------------------------
+from db import get_db_connection
+from utils import handle_upload, handle_multi_upload
+
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
-# --------------------------------
-# DASHBOARD: list of cars
-# --------------------------------
+# ------------------------------------------------------------
+# ADMIN DASHBOARD
+# ------------------------------------------------------------
 @admin_bp.route("/")
 def dashboard():
     if not session.get("user_id"):
-        flash("Please log in to access admin.", "info")
+        flash("Please log in to access admin.", "warning")
         return redirect(url_for("auth.login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM cars ORDER BY id DESC")
-    cars = cursor.fetchall()
-    cursor.close()
+    cars = conn.execute(
+        "SELECT * FROM cars ORDER BY id DESC"
+    ).fetchall()
     conn.close()
 
     return render_template(
         "admin.html",
-        cars=cars,
-        username=session.get("username")
+        username=session.get("username"),
+        cars=cars
     )
 
 
-# --------------------------------
-# ADD CAR
-# --------------------------------
-@admin_bp.route("/add_car", methods=["GET", "POST"])
-def add_car():
+# ------------------------------------------------------------
+# ADD SELLER (FORM PAGE)
+# ------------------------------------------------------------
+@admin_bp.route("/add_seller", methods=["GET"])
+def add_seller_page():
     if not session.get("user_id"):
-        flash("Please log in.", "info")
+        flash("Login required.", "warning")
         return redirect(url_for("auth.login"))
 
-    if request.method == "POST":
-        title = request.form.get("title", "").strip()
-        description = request.form.get("description", "").strip()
-        price = float(request.form.get("price", "0").replace(",", "") or 0)
-        category = request.form.get("category") or None
-        seller_name = request.form.get("seller_name", "").strip()
-
-        image_url = handle_upload(
-            request.files.get("image"),
-            request.form.get("current_image") or "/static/images/default_car.jpg"
-        )
-
-        seller_photo = handle_upload(
-            request.files.get("seller_photo"),
-            request.form.get("current_seller_photo") or "/static/images/default_seller.jpg"
-        )
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO cars (title, description, price, image, seller_name, seller_photo, category)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """,
-            (title, description, price, image_url, seller_name, seller_photo, category)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        flash("Car added successfully.", "success")
-        return redirect(url_for("admin.dashboard"))
-
-    return render_template("add_car.html")
+    return render_template("add_seller.html")
 
 
-# --------------------------------
-# SELLERS LIST
-# --------------------------------
+# ------------------------------------------------------------
+# ADD SELLER (SUBMIT)
+# ------------------------------------------------------------
+@admin_bp.route("/add_seller", methods=["POST"])
+def add_seller():
+    if not session.get("user_id"):
+        flash("Login required.", "warning")
+        return redirect(url_for("auth.login"))
+
+    form = request.form
+    files = request.files
+
+    name = form.get("name")
+    email = form.get("contact_email")
+    phone = form.get("phone")
+    address = form.get("address")
+    about = form.get("about")
+
+    # upload seller photo
+    photo = handle_upload(
+        files.get("photo"),
+        "/static/images/default_seller.jpg"
+    )
+
+    conn = get_db_connection()
+    conn.execute(
+        """
+        INSERT INTO sellers (name, contact_email, phone, address, about, photo)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (name, email, phone, address, about, photo)
+    )
+    conn.commit()
+    conn.close()
+
+    flash("Seller added successfully!", "success")
+    return redirect(url_for("admin.sellers"))
+
+
+# ------------------------------------------------------------
+# SELLERS LIST PAGE
+# ------------------------------------------------------------
 @admin_bp.route("/sellers")
 def sellers():
     if not session.get("user_id"):
-        flash("Please log in.", "info")
+        flash("Login required.", "warning")
         return redirect(url_for("auth.login"))
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM sellers ORDER BY id DESC")
-    sellers = cursor.fetchall()
-    cursor.close()
+    sellers = conn.execute(
+        "SELECT * FROM sellers ORDER BY id DESC"
+    ).fetchall()
     conn.close()
 
     return render_template("admin_sellers.html", sellers=sellers)
 
 
-# --------------------------------
-# ADD SELLER
-# --------------------------------
-@admin_bp.route("/add_seller", methods=["GET", "POST"])
-def add_seller():
+# ------------------------------------------------------------
+# ADD CAR (FORM PAGE)
+# ------------------------------------------------------------
+@admin_bp.route("/add_car", methods=["GET"])
+def add_car_page():
     if not session.get("user_id"):
-        flash("Please log in.", "info")
+        flash("Login required.", "warning")
         return redirect(url_for("auth.login"))
 
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        phone = request.form.get("phone", "").strip()
-        email = request.form.get("email", "").strip()
+    conn = get_db_connection()
+    sellers = conn.execute(
+        "SELECT id, name FROM sellers ORDER BY name ASC"
+    ).fetchall()
+    conn.close()
 
-        photo = handle_upload(
-            request.files.get("photo"),
-            "/static/images/default_seller.jpg"
+    return render_template("add_car.html", sellers=sellers)
+
+
+# ------------------------------------------------------------
+# ADD CAR (SUBMIT)
+# ------------------------------------------------------------
+@admin_bp.route("/add_car", methods=["POST"])
+def add_car():
+    if not session.get("user_id"):
+        flash("Login required.", "warning")
+        return redirect(url_for("auth.login"))
+
+    form = request.form
+    files = request.files
+
+    title = form.get("title")
+    description = form.get("description")
+    price = float(form.get("price") or 0)
+    category = form.get("category") or None
+    mileage = form.get("mileage")
+    body_condition = form.get("body_condition")
+    fuel_efficiency = form.get("fuel_efficiency")
+    engine_performance = form.get("engine_performance")
+    seller_id = form.get("seller_id")
+
+    # Main image
+    main_image = handle_upload(
+        files.get("main_image"),
+        "/static/images/default_car.jpg"
+    )
+
+    # Additional images
+    images = handle_multi_upload(files.getlist("images"))
+
+    conn = get_db_connection()
+    cur = conn.execute(
+        """
+        INSERT INTO cars (
+            title, description, price, category, mileage, body_condition,
+            fuel_efficiency, engine_performance, seller_id, main_image
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            title, description, price, category, mileage, body_condition,
+            fuel_efficiency, engine_performance, seller_id, main_image
+        )
+    )
+
+    car_id = cur.lastrowid
+
+    if images:
+        conn.executemany(
+            "INSERT INTO car_images (car_id, image_url) VALUES (?, ?)",
+            [(car_id, img) for img in images]
         )
 
-        if not name:
-            flash("Seller name is required.", "error")
-            return redirect(url_for("admin.add_seller"))
+    conn.commit()
+    conn.close()
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO sellers (name, phone, email, photo)
-            VALUES (%s, %s, %s, %s)
-            """,
-            (name, phone, email, photo)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
+    flash("Car uploaded successfully!", "success")
+    return redirect(url_for("admin.dashboard"))
 
-        flash("Seller added successfully.", "success")
-        return redirect(url_for("admin.sellers"))
 
-    return render_template("add_seller.html")
+# ------------------------------------------------------------
+# DELETE CAR
+# ------------------------------------------------------------
+@admin_bp.route("/delete_car/<int:car_id>")
+def delete_car(car_id):
+    if not session.get("user_id"):
+        flash("Login required.", "warning")
+        return redirect(url_for("auth.login"))
+
+    conn = get_db_connection()
+    conn.execute("DELETE FROM car_images WHERE car_id=?", (car_id,))
+    conn.execute("DELETE FROM cars WHERE id=?", (car_id,))
+    conn.commit()
+    conn.close()
+
+    flash("Car deleted.", "info")
+    return redirect(url_for("admin.dashboard"))
+
+
+# ------------------------------------------------------------
+# PLACEHOLDER: EDIT CAR
+# ------------------------------------------------------------
+@admin_bp.route("/edit_car/<int:car_id>")
+def edit_car(car_id):
+    flash("Edit page coming soon.", "info")
+    return redirect(url_for("admin.dashboard"))
