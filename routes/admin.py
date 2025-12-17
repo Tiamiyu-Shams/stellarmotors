@@ -8,6 +8,7 @@ import os
 from db import get_db_connection
 from utils import handle_upload, handle_multi_upload
 
+
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
@@ -207,3 +208,4 @@ def delete_car(car_id):
 def edit_car(car_id):
     flash("Edit page coming soon.", "info")
     return redirect(url_for("admin.dashboard"))
+
