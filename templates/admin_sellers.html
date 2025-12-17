@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Sellers — Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-6 rounded shadow mt-10">
+
+  <h1 class="text-2xl font-bold mb-4 text-blue-700">Seller List</h1>
+
+  <a href="{{ url_for('admin.add_seller_page') }}"
+     class="bg-green-600 text-white px-4 py-2 rounded inline-block mb-4">
+    + Add New Seller
+  </a>
+
+  <table class="w-full border">
+    <thead class="bg-gray-100">
+      <tr>
+        <th class="p-2 border">Photo</th>
+        <th class="p-2 border">Name</th>
+        <th class="p-2 border">Email</th>
+        <th class="p-2 border">Phone</th>
+        <th class="p-2 border">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+    {% for s in sellers %}
+      <tr class="border-b">
+        <td class="p-2 border">
+          <img src="{{ s['photo'] }}" class="w-12 h-12 rounded-full object-cover">
+        </td>
+        <td class="p-2 border">{{ s['name'] }}</td>
+        <td class="p-2 border">{{ s['contact_email'] }}</td>
+        <td class="p-2 border">{{ s['phone'] }}</td>
+        <td class="p-2 border">
+          <a href="#" class="text-blue-600 hover:underline text-sm">Edit</a> |
+          <a href="#" class="text-red-600 hover:underline text-sm">Delete</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}
