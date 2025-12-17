@@ -5,7 +5,7 @@
 <div class="flex items-center justify-between gap-4 mb-6">
   <h2 class="text-2xl font-bold">Admin Dashboard</h2>
   <div class="text-sm text-slate-600">Signed in as <strong>{{ username }}</strong></div>
-  <a href="{{ url_for('main.add_car') }}"
+  <a href="{{ url_for('admin.add_car_page') }}"
     class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-4">
     + Add New Car
   </a>
@@ -104,4 +104,5 @@
   </div>
   {% endfor %}
 </section>
+
 {% endblock %}
