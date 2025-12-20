@@ -158,30 +158,26 @@ def add_car():
 
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(
-        """
+
+    cur.execute("""
         INSERT INTO cars (
             title, description, price, category, mileage, body_condition,
             fuel_efficiency, engine_performance, seller_id, main_image
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """,
-        (
-            title, description, price, category, mileage, body_condition,
-            fuel_efficiency, engine_performance, seller_id, main_image
-        )
-    )
-    conn.commit()
+        RETURNING id
+    """, (
+        title, description, price, category, mileage, body_condition,
+        fuel_efficiency, engine_performance, seller_id, main_image
+    ))
 
-    # new row id
-    cur.execute("SELECT LASTVAL()")
     car_id = cur.fetchone()[0]
 
     if images:
-        cur.executemany(
-            "INSERT INTO car_images (car_id, image_url) VALUES (%s, %s)",
-            [(car_id, img) for img in images]
-        )
+        cur.executemany("""
+            INSERT INTO car_images (car_id, image_path)
+            VALUES (%s, %s)
+        """, [(car_id, img) for img in images])
 
     conn.commit()
     cur.close()
@@ -219,3 +215,4 @@ def delete_car(car_id):
 def edit_car(car_id):
     flash("Edit page coming soon.", "info")
     return redirect(url_for("admin.dashboard"))
+
