@@ -66,7 +66,7 @@ def init_db():
             title TEXT NOT NULL,
             description TEXT,
             price REAL,
-            image TEXT,
+            main_image TEXT,
             seller_name TEXT,
             seller_photo TEXT,
             category TEXT,
@@ -126,22 +126,22 @@ def seed_data():
     cur.execute("SELECT COUNT(*) FROM cars")
     if cur.fetchone()[0] == 0:
         cars = [
-            ("2023 Executive Sedan", "Luxury sedan.", 45000,
+            ("2023 Executive Sedan", "Luxury sedan.", 24500000,
              "/static/images/sedan.jpg", "Alice Johnson", None, "Sedan",
              "10,000 km", "Excellent", "15 km/L", "V6 Turbo Engine", 1),
 
-            ("2022 Sport Coupe", "Sport coupe.", 38500,
+            ("2022 Sport Coupe", "Sport coupe.", 13850000,
              "/static/images/coupe.jpg", "Bob Smith", None, "Coupe",
              "8,000 km", "Very Good", "14 km/L", "2.0L Turbo", 2),
 
-            ("2021 Family SUV", "Spacious SUV.", 29900,
+            ("2021 Family SUV", "Spacious SUV.", 19900000,
              "/static/images/suv.jpg", "Carol White", None, "SUV",
              "20,000 km", "Good", "12 km/L", "3.0L V6", 3),
         ]
 
         cur.executemany("""
             INSERT INTO cars (
-                title, description, price, image, seller_name, seller_photo,
+                title, description, price, main_image, seller_name, seller_photo,
                 category, mileage, body_condition, fuel_efficiency,
                 engine_performance, seller_id
             )
