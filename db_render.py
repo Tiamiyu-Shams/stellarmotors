@@ -6,13 +6,17 @@ from werkzeug.security import generate_password_hash
 DB_URL = os.getenv("DATABASE_URL")
 
 
-# ----------- CONNECTION (POSTGRES) ------------
+# -------------------------------------------------
+# POSTGRES CONNECTION
+# -------------------------------------------------
 def get_db_connection():
     conn = psycopg2.connect(DB_URL, sslmode="require")
     return conn
 
 
-# ----------- GENERIC QUERY HELPERS -------------
+# -------------------------------------------------
+# QUERY HELPERS
+# -------------------------------------------------
 def query(sql, args=()):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -35,11 +39,14 @@ def modify(sql, args=()):
     return last_id
 
 
-# ----------- INITIALIZE TABLES -----------------
+# -------------------------------------------------
+# INITIAL DATABASE SCHEMA
+# -------------------------------------------------
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # USERS TABLE (for admin login)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -48,6 +55,7 @@ def init_db():
         );
     """)
 
+    # SELLERS TABLE
     cur.execute("""
         CREATE TABLE IF NOT EXISTS sellers (
             id SERIAL PRIMARY KEY,
@@ -60,25 +68,25 @@ def init_db():
         );
     """)
 
+    # CARS TABLE
     cur.execute("""
         CREATE TABLE IF NOT EXISTS cars (
             id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
             description TEXT,
             price REAL,
-            main_image TEXT,
-            seller_name TEXT,
-            seller_photo TEXT,
             category TEXT,
             mileage TEXT,
             body_condition TEXT,
             fuel_efficiency TEXT,
             engine_performance TEXT,
             seller_id INTEGER REFERENCES sellers(id),
+            main_image TEXT,
             date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     """)
 
+    # MULTIPLE IMAGES TABLE
     cur.execute("""
         CREATE TABLE IF NOT EXISTS car_images (
             id SERIAL PRIMARY KEY,
@@ -89,15 +97,19 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("🚀 PostgreSQL DB initialized on Render")
+    print("🚀 PostgreSQL DB initialized successfully!")
 
 
-# ----------- SEED DATA -------------------------
+# -------------------------------------------------
+# DEFAULT SEED DATA
+# -------------------------------------------------
 def seed_data():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # ADMIN
+    # ------------------------
+    # ADMIN ACCOUNT
+    # ------------------------
     cur.execute("SELECT COUNT(*) FROM users")
     if cur.fetchone()[0] == 0:
         pw = generate_password_hash("password123")
@@ -106,7 +118,9 @@ def seed_data():
             ("admin", pw)
         )
 
-    # SELLERS
+    # ------------------------
+    # SELLER ENTRIES
+    # ------------------------
     cur.execute("SELECT COUNT(*) FROM sellers")
     if cur.fetchone()[0] == 0:
         sellers = [
@@ -122,31 +136,32 @@ def seed_data():
             VALUES (%s, %s, %s, %s, %s, %s)
         """, sellers)
 
-    # CARS
+    # ------------------------
+    # CAR SEED DATA
+    # ------------------------
     cur.execute("SELECT COUNT(*) FROM cars")
     if cur.fetchone()[0] == 0:
         cars = [
-            ("2023 Executive Sedan", "Luxury sedan.", 24500000,
-             "/static/images/sedan.jpg", "Alice Johnson", None, "Sedan",
-             "10,000 km", "Excellent", "15 km/L", "V6 Turbo Engine", 1),
+            ("2023 Executive Sedan", "Luxury sedan.", 24500000, "Sedan",
+             "10,000 km", "Excellent", "15 km/L", "V6 Turbo Engine", 1,
+             "/static/images/sedan.jpg"),
 
-            ("2022 Sport Coupe", "Sport coupe.", 13850000,
-             "/static/images/coupe.jpg", "Bob Smith", None, "Coupe",
-             "8,000 km", "Very Good", "14 km/L", "2.0L Turbo", 2),
+            ("2022 Sport Coupe", "Sport coupe.", 13850000, "Coupe",
+             "8,000 km", "Very Good", "14 km/L", "2.0L Turbo", 2,
+             "/static/images/coupe.jpg"),
 
-            ("2021 Family SUV", "Spacious SUV.", 19900000,
-             "/static/images/suv.jpg", "Carol White", None, "SUV",
-             "20,000 km", "Good", "12 km/L", "3.0L V6", 3),
+            ("2021 Family SUV", "Spacious SUV.", 19900000, "SUV",
+             "20,000 km", "Good", "12 km/L", "3.0L V6", 3,
+             "/static/images/suv.jpg"),
         ]
 
         cur.executemany("""
             INSERT INTO cars (
-                title, description, price, main_image, seller_name, seller_photo,
-                category, mileage, body_condition, fuel_efficiency,
-                engine_performance, seller_id
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                title, description, price, category, mileage, body_condition,
+                fuel_efficiency, engine_performance, seller_id, main_image
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, cars)
 
     conn.commit()
     conn.close()
+    print("🌱 Database seeded successfully!")
