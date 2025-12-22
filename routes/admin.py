@@ -175,7 +175,7 @@ def add_car():
 
     if images:
         cur.executemany("""
-            INSERT INTO car_images (car_id, image_url)
+            INSERT INTO car_images (car_id, image_path)
             VALUES (%s, %s)
         """, [(car_id, img) for img in images])
 
@@ -299,7 +299,7 @@ def update_car(car_id):
     new_images = handle_multi_upload(files.getlist("images"))
     if new_images:
         cur.executemany("""
-            INSERT INTO car_images (car_id, image_url)
+            INSERT INTO car_images (car_id, image_path)
             VALUES (%s, %s)
         """, [(car_id, img) for img in new_images])
 
@@ -329,3 +329,4 @@ def delete_car_image(image_id, car_id):
 
     flash("Image removed.", "info")
     return redirect(url_for("admin.edit_car", car_id=car_id))
+
