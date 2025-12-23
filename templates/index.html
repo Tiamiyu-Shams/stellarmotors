@@ -128,7 +128,7 @@
 
   {% for car in cars %}
   <div class="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition">
-    <img src="{{ car['image'] }}"
+    <img src="{{ car.main_image }}" 
          alt="{{ car['title'] }}"
          class="w-full h-72 object-cover"> 
 
@@ -186,3 +186,4 @@
 
 
 {% endblock %}
+
