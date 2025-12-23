@@ -193,7 +193,7 @@ def add_car():
         cursor.execute(
             """
             INSERT INTO cars
-            (title, description, price, category, seller_id, image,
+            (title, description, price, category, seller_id, main_image,
              mileage, body_condition, fuel_efficiency, engine_performance)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             RETURNING id
@@ -299,3 +299,4 @@ def send_message():
         print("Email error:", e)
 
     return redirect(whatsapp_url)
+
