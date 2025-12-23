@@ -56,52 +56,16 @@
     </h3>
 
     {% if seller %}
-    <div class="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
-      <img src="{{ car['seller_photo'] }}" class="w-24 h-24 rounded-full border object-cover">
-      
+<img src="{{ seller.photo or '/static/images/default_seller.jpg' }}" class="w-20 h-20 rounded-full">
 
-      <div>
-        <p><span class="font-bold text-lg">{{ seller['name'] }}:</span> {{ seller.phone }}</p>
+<p><strong>{{ seller.name }}</strong></p>
+<p>{{ seller.phone }}</p>
 
-        <!-- Click-to-Copy Phone -->
-        <p class="text-gray-600 text-sm mt-1 flex items-center gap-2">
-          <i class="fa-solid fa-phone text-green-600"></i>
-          <span id="copyPhone" class="cursor-pointer" onclick="copyPhoneNumber()">
-            {{ seller['contact_info'] }}
-          </span>
-          <i class="fa-solid fa-copy text-gray-400 cursor-pointer" onclick="copyPhoneNumber()"></i>
-          <span>{{ seller['contact_info'] }}</span>
-        </p>
+<a href="mailto:{{ seller.contact_email }}">Email Seller</a>
+{% endif %}
 
-        <!-- Action Buttons -->
-        <div class="flex gap-3 mt-4">
 
-          <!-- Call Button -->
-          <a href="tel:{{ seller['contact_info'] }}"
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700">
-            <i class="fa-solid fa-phone"></i> Call
-          </a>
-
-          <!-- WhatsApp Button -->
-          <a href="https://wa.me/{{ seller['contact_info'] }}?text=Hello%20I%20am%20interested%20in%20your%20car%20-%20{{ car['title'] }}"
-            target="_blank"
-            class="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700">
-            <i class="fa-brands fa-whatsapp"></i> WhatsApp
-          </a>
-
-          <!-- Email Button -->
-          <a href="mailto:{{ seller['email'] }}?subject=Inquiry%20About%20{{ car['title'] }}"
-            class="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-700">
-            <i class="fa-solid fa-envelope"></i> Email
-          </a>
-
-        </div>
-      </div>
-    </div>
-
-    {% else %}
-    <p class="text-gray-500">Seller information not available.</p>
-    {% endif %}
+   
   </div>
 
   <!-- Send Message Form -->
@@ -229,3 +193,4 @@ function copyPhoneNumber() {
 </style>
 
 {% endblock %}
+
